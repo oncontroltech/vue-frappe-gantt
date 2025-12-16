@@ -612,36 +612,39 @@ export default class Bar {
     }
 
     compute_duration() {
-        let actual_duration_in_days = 0,
-            duration_in_days = 0;
-        for (
-            let d = new Date(this.task._start);
-            d < this.task._end;
-            d.setDate(d.getDate() + 1)
-        ) {
-            duration_in_days++;
-            if (
-                !this.gantt.config.ignored_dates.find(
-                    (k) => k.getTime() === d.getTime(),
-                ) &&
-                (!this.gantt.config.ignored_function ||
-                    !this.gantt.config.ignored_function(d))
-            ) {
-                actual_duration_in_days++;
-            }
-        }
-        this.task.actual_duration = actual_duration_in_days;
-        this.task.ignored_duration = duration_in_days - actual_duration_in_days;
+
+        // let actual_duration_in_days = 0,
+        //     duration_in_days = 0;
+        // for (
+        //     let d = new Date(this.task._start);
+        //     d < this.task._end;
+        //     d.setDate(d.getDate() + 1)
+        // ) {
+        //     duration_in_days++;
+        //     if (
+        //         !this.gantt.config.ignored_dates.find(
+        //             (k) => k.getTime() === d.getTime(),
+        //         ) &&
+        //         (!this.gantt.config.ignored_function ||
+        //             !this.gantt.config.ignored_function(d))
+        //     ) {
+        //         actual_duration_in_days++;
+        //     }
+        // }
+        // this.task.actual_duration = actual_duration_in_days;
+        // this.task.ignored_duration = duration_in_days - actual_duration_in_days;
+
+        let duration = date_utils.diff(this.task._end, this.task._start, 'hour');
 
         this.duration =
             date_utils.convert_scales(
-                duration_in_days + 'd',
+                duration + 'h',
                 this.gantt.config.unit,
             ) / this.gantt.config.step;
 
         this.actual_duration_raw =
             date_utils.convert_scales(
-                actual_duration_in_days + 'd',
+                actual_duration_in_days + 'h',
                 this.gantt.config.unit,
             ) / this.gantt.config.step;
 
