@@ -10,10 +10,10 @@ import { DEFAULT_OPTIONS, DEFAULT_VIEW_MODES } from './defaults';
 import './styles/gantt.css';
 
 export default class Gantt {
-    constructor(wrapper, tasks, options) {
+    constructor(wrapper, tasks_group, options) {
         this.setup_wrapper(wrapper);
         this.setup_options(options);
-        this.setup_tasks(tasks);
+        this.setup_tasks(tasks_group);
         this.change_view_mode();
         this.bind_events();
     }
@@ -41,7 +41,7 @@ export default class Gantt {
         } else {
             throw new TypeError(
                 'Frappe Gantt only supports usage of a string CSS selector,' +
-                    " HTML DOM element or SVG DOM element for the 'element' parameter",
+                " HTML DOM element or SVG DOM element for the 'element' parameter",
             );
         }
 
@@ -137,95 +137,102 @@ export default class Gantt {
         this.change_view_mode(undefined, true);
     }
 
-    setup_tasks(tasks) {
-        this.tasks = tasks
-            .map((task, i) => {
-                if (!task.start) {
-                    console.error(
-                        `task "${task.id}" doesn't have a start date`,
-                    );
-                    return false;
-                }
-
-                task._start = date_utils.parse(task.start);
-                if (task.end === undefined && task.duration !== undefined) {
-                    task.end = task._start;
-                    let durations = task.duration.split(' ');
-
-                    durations.forEach((tmpDuration) => {
-                        let { duration, scale } =
-                            date_utils.parse_duration(tmpDuration);
-                        task.end = date_utils.add(task.end, duration, scale);
-                    });
-                }
-                if (!task.end) {
-                    console.error(`task "${task.id}" doesn't have an end date`);
-                    return false;
-                }
-                task._end = date_utils.parse(task.end);
-
-                let diff = date_utils.diff(task._end, task._start, 'year');
-                if (diff < 0) {
-                    console.error(
-                        `start of task can't be after end of task: in task "${task.id}"`,
-                    );
-                    return false;
-                }
-
-                // make task invalid if duration too large
-                if (date_utils.diff(task._end, task._start, 'year') > 10) {
-                    console.error(
-                        `the duration of task "${task.id}" is too long (above ten years)`,
-                    );
-                    return false;
-                }
-
-                // cache index
-                task._index = i;
-
-                // if hours is not set, assume the last day is full day
-                // e.g: 2018-09-09 becomes 2018-09-09 23:59:59
-                const task_end_values = date_utils.get_date_values(task._end);
-                if (task_end_values.slice(3).every((d) => d === 0)) {
-                    task._end = date_utils.add(task._end, 24, 'hour');
-                }
-
-                // dependencies
-                if (
-                    typeof task.dependencies === 'string' ||
-                    !task.dependencies
-                ) {
-                    let deps = [];
-                    if (task.dependencies) {
-                        deps = task.dependencies
-                            .split(',')
-                            .map((d) => d.trim().replaceAll(' ', '_'))
-                            .filter((d) => d);
+    setup_tasks(tasks_group) {
+        this.tasks_group = tasks_group
+            .map((task_group, index) => {
+                let tasks = task_group.tasks.map((task) => {
+                    if (!task.start) {
+                        console.error(
+                            `task "${task.id}" doesn't have a start date`,
+                        );
+                        return false;
                     }
-                    task.dependencies = deps;
-                }
 
-                // uids
-                if (!task.id) {
-                    task.id = generate_id(task);
-                } else if (typeof task.id === 'string') {
-                    task.id = task.id.replaceAll(' ', '_');
-                } else {
-                    task.id = `${task.id}`;
-                }
+                    task._start = date_utils.parse(task.start);
+                    if (task.end === undefined && task.duration !== undefined) {
+                        task.end = task._start;
+                        let durations = task.duration.split(' ');
 
-                return task;
-            })
-            .filter((t) => t);
+                        durations.forEach((tmpDuration) => {
+                            let {duration, scale} =
+                                date_utils.parse_duration(tmpDuration);
+                            task.end = date_utils.add(task.end, duration, scale);
+                        });
+                    }
+                    if (!task.end) {
+                        console.error(`task "${task.id}" doesn't have an end date`);
+                        return false;
+                    }
+                    task._end = date_utils.parse(task.end);
+
+                    let diff = date_utils.diff(task._end, task._start, 'year');
+                    if (diff < 0) {
+                        console.error(
+                            `start of task can't be after end of task: in task "${task.id}"`,
+                        );
+                        return false;
+                    }
+
+                    // make task invalid if duration too large
+                    if (date_utils.diff(task._end, task._start, 'year') > 10) {
+                        console.error(
+                            `the duration of task "${task.id}" is too long (above ten years)`,
+                        );
+                        return false;
+                    }
+
+                    // cache index
+                    task._index = index;
+
+                    // if hours is not set, assume the last day is full day
+                    // e.g: 2018-09-09 becomes 2018-09-09 23:59:59
+                    const task_end_values = date_utils.get_date_values(task._end);
+                    if (task_end_values.slice(3).every((d) => d === 0)) {
+                        task._end = date_utils.add(task._end, 24, 'hour');
+                    }
+
+                    // dependencies
+                    if (
+                        typeof task.dependencies === 'string' ||
+                        !task.dependencies
+                    ) {
+                        let deps = [];
+                        if (task.dependencies) {
+                            deps = task.dependencies
+                                .split(',')
+                                .map((d) => d.trim().replaceAll(' ', '_'))
+                                .filter((d) => d);
+                        }
+                        task.dependencies = deps;
+                    }
+
+                    // uids
+                    if (!task.id) {
+                        task.id = generate_id(task);
+                    } else if (typeof task.id === 'string') {
+                        task.id = task.id.replaceAll(' ', '_');
+                    } else {
+                        task.id = `${task.id}`;
+                    }
+
+                    return task;
+                }).filter((t) => t)
+                return {
+                    label: task_group.label,
+                    tasks: tasks,
+                }
+            }).filter((t) => t)
         this.setup_dependencies();
     }
 
     setup_dependencies() {
         this.dependency_map = {};
-        for (let t of this.tasks) {
-            for (let d of t.dependencies) {
-                this.dependency_map[d] = this.dependency_map[d] || [];
-                this.dependency_map[d].push(t.id);
+        for (let tg of this.tasks_group) {
+            for (let t of tg.tasks) {
+                for (let d of t.dependencies) {
+                    this.dependency_map[d] = this.dependency_map[d] || [];
+                    this.dependency_map[d].push(t.id);
+                }
             }
         }
     }
@@ -236,7 +243,11 @@ export default class Gantt {
     }
 
     update_task(id, new_details) {
-        let task = this.tasks.find((t) => t.id === id);
+        let task = this.tasks_group.map(
+            (tg) => tg.tasks.find(
+                (t) => t.id === id
+            )
+        );
         let bar = this.bars[task._index];
         Object.assign(task, new_details);
         bar.refresh();
@@ -287,17 +298,19 @@ export default class Gantt {
 
     setup_gantt_dates(refresh) {
         let gantt_start, gantt_end;
-        if (!this.tasks.length) {
+        if (!this.tasks_group.length) {
             gantt_start = new Date();
             gantt_end = new Date();
         }
 
-        for (let task of this.tasks) {
-            if (!gantt_start || task._start < gantt_start) {
-                gantt_start = task._start;
-            }
-            if (!gantt_end || task._end > gantt_end) {
-                gantt_end = task._end;
+        for (let task_group of this.tasks_group) {
+            for (let task of task_group.tasks) {
+                if (!gantt_start || task._start < gantt_start) {
+                    gantt_start = task._start;
+                }
+                if (!gantt_end || task._end > gantt_end) {
+                    gantt_end = task._end;
+                }
             }
         }
 
@@ -415,10 +428,10 @@ export default class Gantt {
         const grid_width = this.dates.length * this.config.column_width;
         const grid_height = Math.max(
             this.config.header_height +
-                this.options.padding +
-                (this.options.bar_height + this.options.padding) *
-                    this.tasks.length -
-                10,
+            this.options.padding +
+            (this.options.bar_height + this.options.padding) *
+            this.tasks_group.length -
+            10,
             this.options.container_height !== 'auto'
                 ? this.options.container_height
                 : 0,
@@ -641,10 +654,10 @@ export default class Gantt {
                 if (check_highlight(d) || (extra_func && extra_func(d))) {
                     const x =
                         (date_utils.diff(
-                            d,
-                            this.gantt_start,
-                            this.config.unit,
-                        ) /
+                                d,
+                                this.gantt_start,
+                                this.config.unit,
+                            ) /
                             this.config.step) *
                         this.config.column_width;
                     const height = this.grid_height - this.config.header_height;
@@ -722,7 +735,7 @@ export default class Gantt {
 
         const height =
             (this.options.bar_height + this.options.padding) *
-            this.tasks.length;
+            this.tasks_group.length;
         this.layers.grid.innerHTML += `<pattern id="diagonalHatch" patternUnits="userSpaceOnUse" width="4" height="4">
           <path d="M-1,1 l2,-2
                    M0,4 l4,-4
@@ -870,43 +883,48 @@ export default class Gantt {
     }
 
     make_bars() {
-        this.bars = this.tasks.map((task) => {
-            const bar = new Bar(this, task);
-            this.layers.bar.appendChild(bar.group);
-            return bar;
+        this.bars = [];
+        this.tasks_group.map((task_group) => {
+            return task_group.tasks.map((task) => {
+                const bar = new Bar(this, task);
+                this.layers.bar.appendChild(bar.group);
+                this.bars.push(bar);
+            })
         });
     }
 
     make_arrows() {
         this.arrows = [];
-        for (let task of this.tasks) {
-            let arrows = [];
-            arrows = task.dependencies
-                .map((task_id) => {
-                    const dependency = this.get_task(task_id);
-                    if (!dependency) return;
-                    const arrow = new Arrow(
-                        this,
-                        this.bars[dependency._index], // from_task
-                        this.bars[task._index], // to_task
-                    );
-                    this.layers.arrow.appendChild(arrow.element);
-                    return arrow;
-                })
-                .filter(Boolean); // filter falsy values
-            this.arrows = this.arrows.concat(arrows);
+        for (let task_group of this.tasks_group) {
+            for (let task of task_group.tasks) {
+                let arrows = [];
+                arrows = task.dependencies
+                    .map((task_id) => {
+                        const dependency = this.get_task(task_id);
+                        if (!dependency) return;
+                        const arrow = new Arrow(
+                            this,
+                            this.bars[dependency._index], // from_task
+                            this.bars[task._index], // to_task
+                        );
+                        this.layers.arrow.appendChild(arrow.element);
+                        return arrow;
+                    })
+                    .filter(Boolean); // filter falsy values
+                this.arrows = this.arrows.concat(arrows);
+            }
         }
     }
 
     map_arrows_on_bars() {
-        for (let bar of this.bars) {
+        this.bars.forEach((bar) => {
             bar.arrows = this.arrows.filter((arrow) => {
                 return (
                     arrow.from_task.task.id === bar.task.id ||
                     arrow.to_task.task.id === bar.task.id
                 );
             });
-        }
+        });
     }
 
     set_dimensions() {
@@ -975,7 +993,7 @@ export default class Gantt {
         this.current_date = date_utils.add(
             this.gantt_start,
             (this.$container.scrollLeft + $el.clientWidth) /
-                this.config.column_width,
+            this.config.column_width,
             this.config.unit,
         );
         current_upper = this.config.view_mode.upper_text(
@@ -1000,13 +1018,13 @@ export default class Gantt {
         let current = new Date(),
             el = this.$container.querySelector(
                 '.date_' +
-                    sanitize(
-                        date_utils.format(
-                            current,
-                            this.config.date_format,
-                            this.options.language,
-                        ),
+                sanitize(
+                    date_utils.format(
+                        current,
+                        this.config.date_format,
+                        this.options.language,
                     ),
+                ),
             );
 
         // safety check to prevent infinite loop
@@ -1015,13 +1033,13 @@ export default class Gantt {
             current = date_utils.add(current, -1, this.config.unit);
             el = this.$container.querySelector(
                 '.date_' +
-                    sanitize(
-                        date_utils.format(
-                            current,
-                            this.config.date_format,
-                            this.options.language,
-                        ),
+                sanitize(
+                    date_utils.format(
+                        current,
+                        this.config.date_format,
+                        this.options.language,
                     ),
+                ),
             );
             c++;
         }
@@ -1178,9 +1196,9 @@ export default class Gantt {
                 if (
                     !extended &&
                     e.currentTarget.scrollWidth -
-                        (e.currentTarget.scrollLeft +
-                            e.currentTarget.clientWidth) <=
-                        trigger
+                    (e.currentTarget.scrollLeft +
+                        e.currentTarget.clientWidth) <=
+                    trigger
                 ) {
                     let old_scroll_left = e.currentTarget.scrollLeft;
                     extended = true;
@@ -1211,7 +1229,7 @@ export default class Gantt {
             this.current_date = date_utils.add(
                 this.gantt_start,
                 (e.currentTarget.scrollLeft / this.config.column_width) *
-                    this.config.step,
+                this.config.step,
                 this.config.unit,
             );
 
@@ -1229,7 +1247,7 @@ export default class Gantt {
                 this.gantt_start,
                 ((e.currentTarget.scrollLeft + $el.clientWidth) /
                     this.config.column_width) *
-                    this.config.step,
+                this.config.step,
                 this.config.unit,
             );
             current_upper = this.config.view_mode.upper_text(
@@ -1514,8 +1532,13 @@ export default class Gantt {
     }
 
     get_task(id) {
-        return this.tasks.find((task) => {
-            return task.id === id;
+        let return_task = undefined;
+        this.tasks_group.forEach((task_group) => {
+            let temp_find = task_group.find((task) => task.id === id);
+            if (temp_find !== undefined)
+            {
+                return_task = temp_find;
+            }
         });
     }
 
@@ -1554,12 +1577,20 @@ export default class Gantt {
      * @memberof Gantt
      */
     get_oldest_starting_date() {
-        if (!this.tasks.length) return new Date();
-        return this.tasks
-            .map((task) => task._start)
-            .reduce((prev_date, cur_date) =>
-                cur_date <= prev_date ? cur_date : prev_date,
-            );
+        if (!this.tasks_group.length) return new Date();
+        let highest_date = new Date();
+        this.tasks_group
+            .forEach((task_group) => {
+                let temp_highest_date = task_group.map((task) => task._start)
+                    .reduce((prev_date, cur_date) =>
+                        cur_date <= prev_date ? cur_date : prev_date,
+                    );
+                if (temp_highest_date > highest_date)
+                {
+                    highest_date = temp_highest_date;
+                }
+            });
+        return highest_date;
     }
 
     /**
