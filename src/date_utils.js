@@ -212,7 +212,7 @@ export default {
         const vals = [
             date.getFullYear(),
             should_reset(YEAR) ? 0 : date.getMonth(),
-            should_reset(MONTH) ? 1 : date.getDate(),
+            should_reset(MONTH) ? 0 : date.getDate(),
             should_reset(DAY) ? 0 : date.getHours(),
             should_reset(HOUR) ? 0 : date.getMinutes(),
             should_reset(MINUTE) ? 0 : date.getSeconds(),
