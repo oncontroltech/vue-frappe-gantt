@@ -51,8 +51,8 @@ export default class Bar {
         this.invalid = this.task.invalid;
         this.height = this.gantt.options.bar_height;
         this.image_size = this.height - 5;
-        this.task._start = new Date(this.task.start);
-        this.task._end = new Date(this.task.end);
+        if (!this.task._start) this.task._start = new Date(this.task.start);
+        if (!this.task._end) this.task._end = new Date(this.task.end);
         this.compute_x();
         this.compute_y();
         this.compute_duration();
@@ -85,8 +85,8 @@ export default class Bar {
         this.compute_expected_progress();
         this.expected_progress_width =
             this.gantt.options.column_width *
-            this.duration *
-            (this.expected_progress / 100) || 0;
+                this.duration *
+                (this.expected_progress / 100) || 0;
     }
 
     draw() {
@@ -164,10 +164,10 @@ export default class Bar {
             this.$bar_progress.style.fill = this.task.color_progress;
         const x =
             (date_utils.diff(
-                    this.task._start,
-                    this.gantt.gantt_start,
-                    this.gantt.config.unit,
-                ) /
+                this.task._start,
+                this.gantt.gantt_start,
+                this.gantt.config.unit,
+            ) /
                 this.gantt.config.step) *
             this.gantt.config.column_width;
 
@@ -549,7 +549,7 @@ export default class Bar {
             this.gantt.config.ignored_positions.reduce((acc, val) => {
                 return acc + (val >= this.x && val <= progress_area);
             }, 0) *
-            this.gantt.config.column_width;
+                this.gantt.config.column_width;
         if (progress < 0) return 0;
         const total =
             this.$bar.getWidth() -
@@ -563,8 +563,8 @@ export default class Bar {
             this.gantt.config.step;
         this.expected_progress =
             ((this.expected_progress < this.duration
-                    ? this.expected_progress
-                    : this.duration) *
+                ? this.expected_progress
+                : this.duration) *
                 100) /
             this.duration;
     }
@@ -666,8 +666,8 @@ export default class Bar {
         this.$expected_bar_progress.setAttribute(
             'width',
             this.gantt.config.column_width *
-            this.actual_duration_raw *
-            (this.expected_progress / 100) || 0,
+                this.actual_duration_raw *
+                (this.expected_progress / 100) || 0,
         );
     }
 
