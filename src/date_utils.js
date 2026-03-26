@@ -188,9 +188,9 @@ export default {
             date.getFullYear() + (scale === YEAR ? qty : 0),
             date.getMonth() + (scale === MONTH ? qty : 0),
             date.getDate() + (scale === DAY ? qty : 0),
-            date.getHours() + (scale === HOUR ? qty : 0),
-            date.getMinutes() + (scale === MINUTE ? qty : 0),
-            date.getSeconds() + (scale === SECOND ? qty : 0),
+            Math.min(date.getHours() + (scale === HOUR ? qty : 0), 23),
+            date.getMinutes() + (scale === MINUTE ? qty : 0) + ((date.getHours() + (scale === HOUR ? qty : 0)) > 23) ? 59 : 0,
+            date.getSeconds() + (scale === SECOND ? qty : 0) + ((scale === HOUR ? qty : 0) > 23) ? 59 : 0,
             date.getMilliseconds() + (scale === MILLISECOND ? qty : 0),
         ];
         return new Date(...vals);

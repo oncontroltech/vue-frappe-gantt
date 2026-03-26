@@ -1579,7 +1579,8 @@ export default class Gantt {
                 this,
             );
         }
-        this.popup.show(opts);
+        let width = this.dates.length * this.config.column_width;
+        this.popup.show({...opts, width});
     }
 
     hide_popup() {

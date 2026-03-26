@@ -22,7 +22,7 @@ export default class Popup {
         this.actions = this.parent.querySelector('.actions');
     }
 
-    show({ x, y, task, target }) {
+    show({ x, y, task, target, windowWidth, total_width, max_popup_width }) {
         this.actions.innerHTML = '';
         let html = this.popup_func({
             task,
@@ -50,7 +50,17 @@ export default class Popup {
         if (this.actions.innerHTML === '') this.actions.remove();
         else this.parent.appendChild(this.actions);
 
-        this.parent.style.left = x + 10 + 'px';
+        if (x + max_popup_width > total_width)
+        {
+            this.parent.style.right = windowWidth - x - 10 + 'px';
+            this.parent.style.left = '';
+        }
+        else
+        {
+            this.parent.style.left = x + 10 + 'px';
+            this.parent.style.right = '';
+        }
+
         this.parent.style.top = y - 10 + 'px';
         this.parent.classList.remove('hide');
     }

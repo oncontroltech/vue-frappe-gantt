@@ -368,6 +368,9 @@ export default class Bar {
                     y: e.offsetY || e.layerY,
                     task: this.task,
                     target: this.$bar,
+                    windowWidth: this.gantt.$container.clientWidth,
+                    total_width: this.gantt.dates.length * this.gantt.config.column_width,
+                    max_popup_width: 200
                 });
             });
         }
@@ -380,6 +383,9 @@ export default class Bar {
                         y: e.offsetY || e.layerY,
                         task: this.task,
                         target: this.$bar,
+                        windowWidth: this.gantt.$container.clientWidth,
+                        total_width: this.gantt.dates.length * this.gantt.config.column_width,
+                        max_popup_width: 200
                     });
                 this.gantt.$container
                     .querySelector(`.highlight-${task_id}`)
@@ -649,7 +655,7 @@ export default class Bar {
         // this.task.actual_duration = actual_duration_in_days;
         // this.task.ignored_duration = duration_in_days - actual_duration_in_days;
 
-        let duration = date_utils.diff(this.task._end, this.task._start, 'hour');
+        let duration = Math.round(date_utils.diff(this.task._end, this.task._start, 'hour'));
 
         this.duration =
             date_utils.convert_scales(
